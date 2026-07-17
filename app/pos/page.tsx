@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
-import { getCachedMenu, saveOrderLocally, startSyncListener, syncPendingOrders } from '@/lib/sync';
+import { getCachedMenu, saveOrderLocally, startSyncListener, syncPendingOrders, seedMenuCache } from '@/lib/sync';
 import { CachedCategory, CachedMenuItem } from '@/lib/db';
 import CategorySidebar from '@/components/pos/CategorySidebar';
 import ItemGrid from '@/components/pos/ItemGrid';
@@ -19,7 +19,7 @@ import {
   getConnectedDeviceName,
   disconnectBluetoothPrinter
 } from '@/components/pos/ReceiptPrinter';
-import { Tag, Pause, LogOut, LayoutDashboard, ClipboardList, ShoppingCart, ChevronRight, X, Printer } from 'lucide-react';
+import { Tag, Pause, LogOut, LayoutDashboard, ClipboardList, ShoppingCart, ChevronRight, X, Printer, RefreshCw } from 'lucide-react';
 import TodayOrdersDrawer from '@/components/pos/TodayOrdersDrawer';
 
 type OrderType = 'dine-in' | 'takeaway' | 'delivery';
@@ -46,6 +46,7 @@ export default function POSPage() {
   const [printerConnected, setPrinterConnected] = useState(false);
   const [printerDeviceName, setPrinterDeviceName] = useState('');
   const [printerSelection, setPrinterSelection] = useState('browser');
+  const [syncingMenu, setSyncingMenu] = useState(false);
 
   // Initialize printer state from localStorage & actual status on mount
   useEffect(() => {
@@ -95,12 +96,62 @@ export default function POSPage() {
   // Load menu cache + start sync listener
   useEffect(() => {
     startSyncListener();
-    getCachedMenu().then(({ categories, items }) => {
+
+    const loadMenu = async () => {
+      // 1. Load cached menu immediately
+      let { categories, items } = await getCachedMenu();
+      if (categories.length > 0) {
+        setCategories(categories);
+        setAllItems(items);
+        setSelectedCat(categories[0]._id);
+      }
+
+      // 2. If online, sync/seed menu cache in the background and update state when ready
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          await seedMenuCache();
+          const fresh = await getCachedMenu();
+          if (fresh.categories.length > 0) {
+            setCategories(fresh.categories);
+            setAllItems(fresh.items);
+            setSelectedCat((prev) => {
+              if (prev && fresh.categories.some((c) => c._id === prev)) return prev;
+              return fresh.categories[0]._id;
+            });
+          }
+        } catch (e) {
+          console.error('Background menu sync failed:', e);
+        }
+      }
+    };
+
+    loadMenu();
+  }, []);
+
+  const handleRefreshMenu = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      alert('You are offline. Cannot sync menu from server.');
+      return;
+    }
+    setSyncingMenu(true);
+    try {
+      await seedMenuCache();
+      const { categories, items } = await getCachedMenu();
       setCategories(categories);
       setAllItems(items);
-      if (categories.length > 0) setSelectedCat(categories[0]._id);
-    });
-  }, []);
+      if (categories.length > 0) {
+        setSelectedCat((prev) => {
+          if (prev && categories.some((c) => c._id === prev)) return prev;
+          return categories[0]._id;
+        });
+      }
+      alert('Menu synced successfully!');
+    } catch (err: any) {
+      alert(`Sync Error: ${err.message}`);
+    } finally {
+      setSyncingMenu(false);
+    }
+  };
 
 
   const visibleItems = allItems.filter((i) => i.category._id === selectedCat);
@@ -251,6 +302,16 @@ export default function POSPage() {
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span style={{ color: '#888', fontSize: '0.82rem' }}>{user.name}</span>
+          <button
+            id="nav-sync-menu"
+            onClick={handleRefreshMenu}
+            className="btn btn-ghost btn-sm"
+            disabled={syncingMenu}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <RefreshCw size={13} style={{ animation: syncingMenu ? 'spin 1s linear infinite' : 'none' }} />
+            <span>Sync Menu</span>
+          </button>
           <button id="nav-orders" onClick={() => setShowOrders(true)} className="btn btn-ghost btn-sm">
               <ClipboardList size={14} /> Orders
             </button>
