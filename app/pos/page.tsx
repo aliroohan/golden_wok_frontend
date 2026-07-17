@@ -55,9 +55,7 @@ export default function POSPage() {
 
   // Cart handlers
   const addItem = (item: CachedMenuItem) => {
-    if (item.variants.length > 1) { setPickerItem(item); return; }
-    const v = item.variants[0];
-    addToCart({ menuItemId: item._id, menuItemName: item.name, variantId: v._id, variantLabel: v.label, qty: 1, priceAtSale: v.price });
+    setPickerItem(item);
   };
 
   const addToCart = (cartItem: CartItem) => {
