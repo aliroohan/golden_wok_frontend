@@ -1,0 +1,15 @@
+{
+  "name": "Golden Wok POS",
+  "short_name": "GoldenWok",
+  "description": "POS & Restaurant Management for Golden Wok",
+  "start_url": "/pos",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#c0392b",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["business", "productivity"]
+}
