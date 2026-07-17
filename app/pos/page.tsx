@@ -12,8 +12,14 @@ import Cart, { CartItem } from '@/components/pos/Cart';
 import VariantPicker from '@/components/pos/VariantPicker';
 import DiscountModal from '@/components/pos/DiscountModal';
 import SyncBanner from '@/components/pos/SyncBanner';
-import { printReceipt } from '@/components/pos/ReceiptPrinter';
-import { Tag, Pause, LogOut, LayoutDashboard, ClipboardList, ShoppingCart, ChevronRight, X } from 'lucide-react';
+import {
+  printReceipt,
+  connectBluetoothPrinter,
+  isBluetoothConnected,
+  getConnectedDeviceName,
+  disconnectBluetoothPrinter
+} from '@/components/pos/ReceiptPrinter';
+import { Tag, Pause, LogOut, LayoutDashboard, ClipboardList, ShoppingCart, ChevronRight, X, Printer } from 'lucide-react';
 import TodayOrdersDrawer from '@/components/pos/TodayOrdersDrawer';
 
 type OrderType = 'dine-in' | 'takeaway' | 'delivery';
@@ -36,6 +42,51 @@ export default function POSPage() {
   const [showOrders, setShowOrders] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // Printer connection states
+  const [printerConnected, setPrinterConnected] = useState(false);
+  const [printerDeviceName, setPrinterDeviceName] = useState('');
+  const [printerSelection, setPrinterSelection] = useState('browser');
+
+  // Initialize printer state from localStorage & actual status on mount
+  useEffect(() => {
+    setPrinterConnected(isBluetoothConnected());
+    setPrinterDeviceName(getConnectedDeviceName());
+    const savedPrinter = localStorage.getItem('selected_printer_type') || 'browser';
+    setPrinterSelection(savedPrinter);
+  }, []);
+
+  const handleConnectPrinter = async () => {
+    try {
+      const name = await connectBluetoothPrinter();
+      setPrinterConnected(true);
+      setPrinterDeviceName(name);
+      setPrinterSelection('58mm');
+      localStorage.setItem('selected_printer_type', '58mm');
+    } catch (err: any) {
+      if (err.name !== 'NotFoundError' && err.message !== 'User cancelled the request device selector.') {
+        alert(`Bluetooth Connection Error: ${err.message}`);
+      }
+    }
+  };
+
+  const handleDisconnectPrinter = () => {
+    disconnectBluetoothPrinter();
+    setPrinterConnected(false);
+    setPrinterDeviceName('');
+    setPrinterSelection('browser');
+    localStorage.setItem('selected_printer_type', 'browser');
+  };
+
+  const handlePrinterSelectionChange = (val: string) => {
+    setPrinterSelection(val);
+    localStorage.setItem('selected_printer_type', val);
+    if (val === '58mm' && !printerConnected) {
+      handleConnectPrinter();
+    } else if (val === 'browser' && printerConnected) {
+      handleDisconnectPrinter();
+    }
+  };
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && user === null) router.replace('/login');
@@ -51,6 +102,7 @@ export default function POSPage() {
     });
   }, []);
 
+
   const visibleItems = allItems.filter((i) => i.category._id === selectedCat);
 
   // Cart handlers
@@ -61,7 +113,7 @@ export default function POSPage() {
   const addToCart = (cartItem: CartItem) => {
     setCartItems((prev) => {
       const idx = prev.findIndex((c) => c.variantId === cartItem.variantId);
-      if (idx >= 0) { const next = [...prev]; next[idx].qty += 1; return next; }
+      if (idx >= 0) { const next = [...prev]; next[idx].qty += cartItem.qty; return next; }
       return [...prev, cartItem];
     });
   };
@@ -85,6 +137,11 @@ export default function POSPage() {
   const change = Math.max(0, cash - netTotal);
 
   const canCheckout = cartItems.length > 0 && cash >= netTotal;
+
+  // Keep cash received synced with netTotal by default
+  useEffect(() => {
+    setCashReceived(netTotal > 0 ? netTotal.toString() : '');
+  }, [netTotal]);
 
   // Checkout
   const handleCheckout = async () => {
@@ -149,10 +206,49 @@ export default function POSPage() {
         padding: '0.6rem 1rem', background: '#141414', borderBottom: '1px solid #2a2a2a',
         gap: '1rem', flexShrink: 0,
       }}>
-        <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f39c12' }}>🥢 Golden Wok</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f39c12' }}>🥢 Golden Wok</span>
           <SyncBanner />
         </div>
+
+        {/* Printer connection bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#1e1e1e', padding: '0.3rem 0.6rem', borderRadius: 8, border: '1px solid #2a2a2a' }}>
+          <Printer size={15} color={printerConnected ? '#2ecc71' : '#888'} />
+          <select
+            value={printerSelection}
+            onChange={(e) => handlePrinterSelectionChange(e.target.value)}
+            style={{
+              background: 'none', border: 'none', color: '#fff', fontSize: '0.8rem',
+              fontWeight: 600, outline: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value="browser" style={{ background: '#141414', color: '#fff' }}>Browser PDF Print</option>
+            <option value="58mm" style={{ background: '#141414', color: '#fff' }}>58mm Bluetooth Printer</option>
+          </select>
+          {printerConnected ? (
+            <button
+              onClick={handleDisconnectPrinter}
+              style={{
+                background: '#c0392b', color: '#fff', border: 'none', borderRadius: 4,
+                padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              onClick={handleConnectPrinter}
+              style={{
+                background: '#2980b9', color: '#fff', border: 'none', borderRadius: 4,
+                padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.2rem'
+              }}
+            >
+              Connect
+            </button>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span style={{ color: '#888', fontSize: '0.82rem' }}>{user.name}</span>
           <button id="nav-orders" onClick={() => setShowOrders(true)} className="btn btn-ghost btn-sm">
@@ -231,8 +327,62 @@ export default function POSPage() {
                 placeholder="0"
                 value={cashReceived}
                 onChange={(e) => setCashReceived(e.target.value)}
-                style={{ fontWeight: 700, fontSize: '1.1rem' }}
+                style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}
               />
+
+              {/* Quick Cash Options */}
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setCashReceived(netTotal.toString())}
+                  style={{
+                    flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: '#2e2e2e', border: '1px solid #3e3e3e',
+                    borderRadius: 8, color: '#fff', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
+                  }}
+                  className="card-hover"
+                  title="Exact amount"
+                >
+                  Exact (Rs. {netTotal.toLocaleString()})
+                </button>
+                {(() => {
+                  if (netTotal <= 0) return null;
+                  const suggestions = new Set<number>();
+                  
+                  // Suggest next 100 only for small transactions (< 500)
+                  if (netTotal < 500) {
+                    suggestions.add(Math.ceil((netTotal + 1) / 100) * 100);
+                  }
+                  suggestions.add(Math.ceil((netTotal + 1) / 500) * 500);
+                  suggestions.add(Math.ceil((netTotal + 1) / 1000) * 1000);
+                  
+                  if (netTotal >= 1000) {
+                    suggestions.add(Math.ceil((netTotal + 1) / 5000) * 5000);
+                  } else {
+                    suggestions.add(500);
+                    suggestions.add(1000);
+                  }
+                  
+                  const sorted = Array.from(suggestions)
+                    .filter((val) => val > netTotal)
+                    .sort((a, b) => a - b)
+                    .slice(0, 3);
+                  
+                  return sorted.map((val) => (
+                    <button
+                      key={`sug-${val}`}
+                      type="button"
+                      onClick={() => setCashReceived(val.toString())}
+                      style={{
+                        flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: '#1a2f1c', border: '1px solid #27452a',
+                        borderRadius: 8, color: '#4ade80', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
+                      }}
+                      className="card-hover"
+                    >
+                      Rs. {val.toLocaleString()}
+                    </button>
+                  ));
+                })()}
+              </div>
             </div>
 
             {cash > 0 && (
@@ -281,8 +431,8 @@ export default function POSPage() {
       {pickerItem && (
         <VariantPicker
           item={pickerItem}
-          onSelect={(variantId, variantLabel, price) => {
-            addToCart({ menuItemId: pickerItem._id, menuItemName: pickerItem.name, variantId, variantLabel, qty: 1, priceAtSale: price });
+          onSelect={(variantId, variantLabel, price, qty) => {
+            addToCart({ menuItemId: pickerItem._id, menuItemName: pickerItem.name, variantId, variantLabel, qty, priceAtSale: price });
             setPickerItem(null);
             // Auto open cart drawer on mobile to show the newly added item
             if (window.innerWidth < 1024) setIsCartOpen(true);

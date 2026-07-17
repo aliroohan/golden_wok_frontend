@@ -5,6 +5,7 @@ import api from '@/lib/api';
 
 interface Stats { totalSales: number; orderCount: number; avgOrderValue: number; byType: Record<string, number>; }
 interface PLData { totalSales: number; totalExpenses: number; netProfit: number; expensesByCategory: Record<string, number>; }
+interface ProductSale { name: string; variantLabel: string; totalQty: number; totalRevenue: number; }
 
 export default function ReportsPage() {
   const today = new Date().toISOString().split('T')[0];
@@ -12,17 +13,20 @@ export default function ReportsPage() {
   const [to, setTo] = useState(today);
   const [pl, setPL] = useState<PLData | null>(null);
   const [daily, setDaily] = useState<Stats | null>(null);
+  const [productSales, setProductSales] = useState<ProductSale[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadReports = async () => {
     setLoading(true);
     try {
-      const [plR, dailyR] = await Promise.all([
+      const [plR, dailyR, itemsR] = await Promise.all([
         api.get(`/reports/profit-loss?from=${from}&to=${to}`),
         api.get(`/reports/daily?date=${today}`),
+        api.get(`/reports/top-items?from=${from}&to=${to}&limit=100`),
       ]);
       setPL(plR.data);
       setDaily(dailyR.data);
+      setProductSales(itemsR.data);
     } finally { setLoading(false); }
   };
 
@@ -95,7 +99,7 @@ export default function ReportsPage() {
 
           {/* Expenses by category */}
           {pl && Object.keys(pl.expensesByCategory).length > 0 && (
-            <div className="card">
+            <div className="card" style={{ marginBottom: '1.2rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Expenses Breakdown</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {Object.entries(pl.expensesByCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => {
@@ -113,6 +117,48 @@ export default function ReportsPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Detailed Product Sales List */}
+          {productSales && (
+            <div className="card" style={{ marginBottom: '1.2rem' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1.2rem' }}>Detailed Product Sales</h3>
+              {productSales.length === 0 ? (
+                <p style={{ color: '#555', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem' }}>
+                  No product sales recorded in this date range.
+                </p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #2a2a2a', color: '#888' }}>
+                        <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Product Name</th>
+                        <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Size / Variant</th>
+                        <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Qty Sold</th>
+                        <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Total Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productSales.map((item, idx) => (
+                        <tr
+                          key={`${item.name}-${item.variantLabel}-${idx}`}
+                          style={{ borderBottom: '1px solid #1f1f1f' }}
+                        >
+                          <td style={{ padding: '0.75rem 0.5rem', fontWeight: 500, color: '#f0f0f0' }}>{item.name}</td>
+                          <td style={{ padding: '0.75rem 0.5rem', color: '#aaa' }}>{item.variantLabel || '-'}</td>
+                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 600, color: '#27ae60' }}>
+                            {item.totalQty.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 700, color: '#f39c12' }}>
+                            Rs. {item.totalRevenue.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </>
