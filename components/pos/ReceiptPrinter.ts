@@ -7,6 +7,7 @@ export interface ReceiptData {
   items: CartItem[];
   subtotal: number;
   discount: { amount: number; reason: string };
+  deliveryFee?: number;
   netTotal: number;
   cashReceived: number;
   change: number;
@@ -193,6 +194,7 @@ function buildReceiptHTML(data: ReceiptData): string {
       <table class="totals">
         <tr><td>Subtotal</td><td style="text-align:right">Rs.${data.subtotal.toLocaleString()}</td></tr>
         ${data.discount.amount > 0 ? `<tr><td>Discount (${data.discount.reason})</td><td style="text-align:right">-Rs.${data.discount.amount.toLocaleString()}</td></tr>` : ''}
+        ${data.deliveryFee && data.deliveryFee > 0 ? `<tr><td>Delivery Fee</td><td style="text-align:right">Rs.${data.deliveryFee.toLocaleString()}</td></tr>` : ''}
       </table>
       <div class="divider"></div>
       <table class="grand">
@@ -201,7 +203,7 @@ function buildReceiptHTML(data: ReceiptData): string {
         <tr style="font-size:12px;font-weight:normal"><td>Change</td><td style="text-align:right">Rs.${data.change.toLocaleString()}</td></tr>
       </table>
       <div class="divider"></div>
-      <p class="footer">Thank you for dining with us!<br/>Please visit again 🙏</p>
+      <p class="footer">Thank you for dining with us!<br/>Please visit again</p>
     </body>
     </html>
   `;
@@ -250,6 +252,10 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
         builder.line(`Disc (${data.discount.reason})`.slice(0, 20).padEnd(20) + `-Rs.${data.discount.amount.toLocaleString()}`.padStart(12));
       }
 
+      if (data.deliveryFee && data.deliveryFee > 0) {
+        builder.line('Delivery Fee'.padEnd(20) + `Rs.${data.deliveryFee.toLocaleString()}`.padStart(12));
+      }
+
       builder.line('--------------------------------')
         .bold(true)
         .line('TOTAL'.padEnd(20) + `Rs.${data.netTotal.toLocaleString()}`.padStart(12))
@@ -259,7 +265,7 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
         .line('--------------------------------')
         .align('center')
         .line('Thank you for dining with us!')
-        .line('Please visit again 🙏')
+        .line('Please visit again')
         .feed(5);
 
       await writeEscPosData(printerCharacteristic, builder.getBytes());

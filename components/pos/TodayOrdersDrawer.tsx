@@ -27,6 +27,7 @@ interface Order {
   items: OrderItem[];
   subtotal: number;
   discount: { amount: number; reason: string };
+  deliveryFee?: number;
   netTotal: number;
   cashReceived: number;
   change: number;
@@ -85,6 +86,7 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
             subtotal: o.subtotal,
             discount: o.discount,
             netTotal: o.netTotal,
+            deliveryFee: o.deliveryFee,
             cashReceived: o.cashReceived,
             change: o.change,
             status: o.status,
@@ -152,6 +154,7 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
       })),
       subtotal: order.subtotal,
       discount: order.discount,
+      deliveryFee: order.deliveryFee,
       netTotal: order.netTotal,
       cashReceived: order.cashReceived,
       change: order.change,
@@ -317,6 +320,12 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                             <span>−Rs. {order.discount.amount.toLocaleString()}</span>
                           </div>
                         )}
+                        {order.deliveryFee && order.deliveryFee > 0 ? (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: 'var(--text-muted)' }}>
+                            <span>Delivery Fee</span>
+                            <span>Rs. {order.deliveryFee.toLocaleString()}</span>
+                          </div>
+                        ) : null}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, padding: '0.3rem 0 0', borderTop: '1px solid var(--border)', marginTop: '0.3rem' }}>
                           <span>Total</span>
                           <span style={{ color: 'var(--gold)' }}>Rs. {order.netTotal.toLocaleString()}</span>

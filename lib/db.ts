@@ -15,6 +15,7 @@ export interface LocalOrder {
   subtotal: number;
   discount: { amount: number; reason: string };
   netTotal: number;
+  deliveryFee?: number;
   cashReceived: number;
   change: number;
   status: 'held' | 'completed' | 'voided';

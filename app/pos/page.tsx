@@ -34,6 +34,7 @@ export default function POSPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<OrderType>('dine-in');
   const [discount, setDiscount] = useState({ amount: 0, reason: '' });
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [cashReceived, setCashReceived] = useState('');
   const [pickerItem, setPickerItem] = useState<CachedMenuItem | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
@@ -179,11 +180,11 @@ export default function POSPage() {
 
   const removeItem = (i: number) => setCartItems((prev) => prev.filter((_, idx) => idx !== i));
 
-  const clearCart = () => { setCartItems([]); setDiscount({ amount: 0, reason: '' }); setCashReceived(''); };
+  const clearCart = () => { setCartItems([]); setDiscount({ amount: 0, reason: '' }); setCashReceived(''); setDeliveryFee(0); };
 
   // Totals
   const subtotal = cartItems.reduce((s, i) => s + i.qty * i.priceAtSale, 0);
-  const netTotal = Math.max(0, subtotal - discount.amount);
+  const netTotal = Math.max(0, subtotal - discount.amount + (orderType === 'delivery' ? deliveryFee : 0));
   const cash = Number(cashReceived) || 0;
   const change = Math.max(0, cash - netTotal);
 
@@ -199,13 +200,14 @@ export default function POSPage() {
     if (!user) return;
     setCheckingOut(true);
     const localId = uuidv4();
-    const orderData = {
+     const orderData = {
       localId,
       orderType,
       items: cartItems.map((i) => ({ ...i, menuItemId: i.menuItemId })),
       subtotal,
       discount,
       netTotal,
+      deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
       cashReceived: cash,
       change,
       status: 'completed' as const,
@@ -229,6 +231,7 @@ export default function POSPage() {
       subtotal,
       discount,
       netTotal,
+      deliveryFee: orderType === 'delivery' ? deliveryFee : 0,
       cashReceived: cash,
       change,
       cashierName: user.name,
@@ -349,7 +352,7 @@ export default function POSPage() {
           {/* Order type */}
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.8rem' }}>
             {(['dine-in', 'takeaway', 'delivery'] as OrderType[]).map((t) => (
-              <button key={t} id={`ot-${t}`} onClick={() => setOrderType(t)}
+              <button key={t} id={`ot-${t}`} onClick={() => { setOrderType(t); if (t !== 'delivery') setDeliveryFee(0); }}
                 style={{
                   flex: 1, padding: '0.45rem 0.2rem', borderRadius: 8, fontWeight: 600, fontSize: '0.72rem',
                   cursor: 'pointer', border: 'none', transition: 'all 0.15s',
@@ -371,6 +374,37 @@ export default function POSPage() {
             {discount.amount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--danger)' }}>
                 <span>Discount ({discount.reason})</span><span>−Rs. {discount.amount.toLocaleString()}</span>
+              </div>
+            )}
+            {orderType === 'delivery' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <span>Delivery Fee</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Rs.</span>
+                  <input
+                    id="delivery-fee-input"
+                    type="number"
+                    min={0}
+                    value={deliveryFee || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setDeliveryFee(isNaN(val) ? 0 : val);
+                    }}
+                    style={{
+                      width: '70px',
+                      padding: '0.2rem 0.4rem',
+                      background: 'var(--surface-2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                      color: 'var(--text)',
+                      fontSize: '0.85rem',
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      outline: 'none',
+                    }}
+                    placeholder="0"
+                  />
+                </div>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.8rem' }}>

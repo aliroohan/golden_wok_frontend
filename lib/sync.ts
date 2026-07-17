@@ -64,6 +64,7 @@ export async function syncPendingOrders(): Promise<void> {
       subtotal: o.subtotal,
       discount: o.discount,
       netTotal: o.netTotal,
+      deliveryFee: o.deliveryFee || 0,
       cashReceived: o.cashReceived,
       change: o.change,
       status: o.status,
