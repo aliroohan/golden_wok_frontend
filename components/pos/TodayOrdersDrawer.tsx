@@ -166,7 +166,7 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
       display: 'flex', justifyContent: 'flex-end', zIndex: 200,
     }} onClick={onClose}>
       <div
@@ -174,16 +174,16 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
         className="fade-in"
         style={{
           width: '100%', maxWidth: 460, height: '100%',
-          background: '#141414', borderLeft: '1px solid #2a2a2a',
+          background: 'var(--surface)', borderLeft: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
         }}
       >
         {/* Header */}
-        <div style={{ padding: '1rem', borderBottom: '1px solid #2a2a2a' }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
             <div>
-              <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>Orders History</h3>
-              <p style={{ color: '#888', fontSize: '0.8rem', marginTop: 2 }}>
+              <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>Orders History</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 2 }}>
                 {completedCount} completed · Rs. {todayTotal.toLocaleString()} total
               </p>
             </div>
@@ -199,17 +199,17 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
 
           {/* Date Picker Input */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#888' }}>Date:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Date:</span>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               style={{
-                background: '#222',
-                border: '1px solid #333',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
                 borderRadius: 8,
                 padding: '0.35rem 0.6rem',
-                color: '#fff',
+                color: 'var(--text)',
                 fontSize: '0.8rem',
                 fontFamily: 'inherit',
                 outline: 'none',
@@ -226,9 +226,9 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
               <span className="spinner" style={{ width: 32, height: 32 }} />
             </div>
           ) : error ? (
-            <p style={{ color: '#e74c3c', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>{error}</p>
+            <p style={{ color: 'var(--danger)', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>{error}</p>
           ) : orders.length === 0 ? (
-            <p style={{ color: '#555', textAlign: 'center', padding: '3rem', fontSize: '0.9rem' }}>No orders found for this date</p>
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem', fontSize: '0.9rem' }}>No orders found for this date</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {orders.map((order) => {
@@ -240,8 +240,8 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                   <div
                     key={order._id}
                     style={{
-                      background: '#1e1e1e',
-                      border: `1px solid ${isCancelled ? '#3a1010' : '#2e2e2e'}`,
+                      background: 'var(--surface-2)',
+                      border: `1px solid ${isCancelled ? 'var(--danger-border)' : 'var(--border)'}`,
                       borderRadius: 12,
                       overflow: 'hidden',
                       opacity: isCancelled ? 0.6 : 1,
@@ -255,19 +255,19 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                       {/* Order ref + time */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', fontFamily: 'monospace', color: '#f39c12' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem', fontFamily: 'monospace', color: 'var(--gold)' }}>
                             #{order.localId.slice(-6).toUpperCase()}
                           </span>
                           <span className={`badge ${STATUS_BADGE[order.status] || 'badge-gray'}`}>{order.status}</span>
-                          <span style={{ fontSize: '0.72rem', color: '#888' }}>{ORDER_TYPE_LABEL[order.orderType] || order.orderType}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{ORDER_TYPE_LABEL[order.orderType] || order.orderType}</span>
                         </div>
-                        <p style={{ fontSize: '0.78rem', color: '#888' }}>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                           {time} · {order.cashier?.name || 'Unknown'} · {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                         </p>
                       </div>
 
                       {/* Net total */}
-                      <span style={{ fontWeight: 800, color: isCancelled ? '#555' : '#f0f0f0', fontSize: '0.95rem', flexShrink: 0 }}>
+                      <span style={{ fontWeight: 800, color: isCancelled ? 'var(--text-dim)' : 'var(--text)', fontSize: '0.95rem', flexShrink: 0 }}>
                         Rs. {order.netTotal.toLocaleString()}
                       </span>
 
@@ -295,7 +295,7 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                           style={{ flexShrink: 0 }}
                         >
                           {cancelling === order._id
-                            ? <span className="spinner" style={{ width: 13, height: 13, borderTopColor: '#e74c3c' }} />
+                            ? <span className="spinner" style={{ width: 13, height: 13, borderTopColor: 'var(--danger)' }} />
                             : <XCircle size={14} />
                           }
                         </button>
@@ -304,31 +304,31 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
 
                     {/* Expanded items */}
                     {isExpanded && (
-                      <div style={{ borderTop: '1px solid #2a2a2a', padding: '0.6rem 0.9rem', background: '#181818' }}>
+                      <div style={{ borderTop: '1px solid var(--border)', padding: '0.6rem 0.9rem', background: 'var(--surface)' }}>
                         {order.items.map((item, i) => (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: '#aaa' }}>
-                            <span>{item.menuItemName} <span style={{ color: '#666' }}>({item.variantLabel})</span> × {item.qty}</span>
-                            <span style={{ color: '#f0f0f0' }}>Rs. {(item.qty * item.priceAtSale).toLocaleString()}</span>
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: 'var(--text-muted)' }}>
+                            <span>{item.menuItemName} <span style={{ color: 'var(--text-dim)' }}>({item.variantLabel})</span> × {item.qty}</span>
+                            <span style={{ color: 'var(--text)' }}>Rs. {(item.qty * item.priceAtSale).toLocaleString()}</span>
                           </div>
                         ))}
                         {order.discount.amount > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: '#e74c3c', borderTop: '1px solid #2a2a2a', marginTop: '0.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: 'var(--danger)', borderTop: '1px solid var(--border)', marginTop: '0.4rem' }}>
                             <span>Discount ({order.discount.reason})</span>
                             <span>−Rs. {order.discount.amount.toLocaleString()}</span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, padding: '0.3rem 0 0', borderTop: '1px solid #2a2a2a', marginTop: '0.3rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, padding: '0.3rem 0 0', borderTop: '1px solid var(--border)', marginTop: '0.3rem' }}>
                           <span>Total</span>
-                          <span style={{ color: '#f39c12' }}>Rs. {order.netTotal.toLocaleString()}</span>
+                          <span style={{ color: 'var(--gold)' }}>Rs. {order.netTotal.toLocaleString()}</span>
                         </div>
                         {order.cashReceived > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#888', paddingTop: '0.2rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', paddingTop: '0.2rem' }}>
                             <span>Cash / Change</span>
                             <span>Rs. {order.cashReceived.toLocaleString()} / Rs. {order.change.toLocaleString()}</span>
                           </div>
                         )}
                         {!isCancelled && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.6rem', borderTop: '1px solid #2a2a2a', paddingTop: '0.6rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.6rem', borderTop: '1px solid var(--border)', paddingTop: '0.6rem' }}>
                             <button
                               id={`expanded-print-${order._id}`}
                               onClick={() => handleReprint(order)}

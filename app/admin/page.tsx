@@ -73,8 +73,8 @@ export default function AdminDashboard() {
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Dashboard</h1>
-        <span style={{ color: '#888', fontSize: '0.85rem' }}>
+        <h1 className="page-title" style={{ margin: 0, color: 'var(--text)' }}>Dashboard</h1>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           {new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </span>
       </div>
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
                     <p className="stat-label">{label}</p>
                     <p className="stat-value" style={{ color }}>{value}</p>
                   </div>
-                  <div style={{ background: '#242424', borderRadius: 10, padding: '0.5rem' }}>
+                  <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '0.5rem', border: '1px solid var(--border)' }}>
                     <Icon size={20} color={color} />
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
           {/* Order type breakdown */}
           {stats && (
             <div className="card">
-              <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Sales by Order Type</h3>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>Sales by Order Type</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {['dine-in', 'takeaway', 'delivery'].map((t) => {
                   const val = stats.byType[t] || 0;
@@ -110,11 +110,11 @@ export default function AdminDashboard() {
                   return (
                     <div key={t}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem' }}>
-                        <span style={{ textTransform: 'capitalize', color: '#888' }}>{t}</span>
-                        <span style={{ fontWeight: 600 }}>Rs. {val.toLocaleString()} <span style={{ color: '#555' }}>({pct.toFixed(1)}%)</span></span>
+                        <span style={{ textTransform: 'capitalize', color: 'var(--text-muted)' }}>{t}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Rs. {val.toLocaleString()} <span style={{ color: 'var(--text-dim)' }}>({pct.toFixed(1)}%)</span></span>
                       </div>
-                      <div style={{ background: '#242424', borderRadius: 4, height: 6 }}>
-                        <div style={{ background: '#c0392b', borderRadius: 4, height: 6, width: `${pct}%`, transition: 'width 0.5s ease' }} />
+                      <div style={{ background: 'var(--surface-3)', borderRadius: 4, height: 6 }}>
+                        <div style={{ background: 'var(--red)', borderRadius: 4, height: 6, width: `${pct}%`, transition: 'width 0.5s ease' }} />
                       </div>
                     </div>
                   );
@@ -128,11 +128,11 @@ export default function AdminDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
               {/* Top Items */}
               <div className="card">
-                <h3 style={{ fontWeight: 700, marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontWeight: 700, marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text)' }}>
                   🔥 Top Selling Items
                 </h3>
                 {topItems.filter(item => !item.name.toLowerCase().includes('deal')).length === 0 ? (
-                  <p style={{ color: '#555', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No data available</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No data available</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                     {topItems
@@ -140,12 +140,12 @@ export default function AdminDashboard() {
                       .slice(0, 5)
                       .map((item, idx) => (
                         <div key={`${item.name}-${item.variantLabel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f39c12', minWidth: 24 }}>#{idx + 1}</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', minWidth: 24 }}>#{idx + 1}</span>
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f0f0f0' }}>{item.name}</p>
-                            <p style={{ fontSize: '0.75rem', color: '#888' }}>Size: {item.variantLabel} · {item.totalQty} sold</p>
+                            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{item.name}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Size: {item.variantLabel} · {item.totalQty} sold</p>
                           </div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f39c12' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--gold)' }}>
                             Rs. {item.totalRevenue.toLocaleString()}
                           </span>
                         </div>
@@ -156,11 +156,11 @@ export default function AdminDashboard() {
 
               {/* Top Deals */}
               <div className="card">
-                <h3 style={{ fontWeight: 700, marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontWeight: 700, marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text)' }}>
                   ✨ Top Selling Deals
                 </h3>
                 {topItems.filter(item => item.name.toLowerCase().includes('deal')).length === 0 ? (
-                  <p style={{ color: '#555', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No deals sold yet</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>No deals sold yet</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                     {topItems
@@ -168,12 +168,12 @@ export default function AdminDashboard() {
                       .slice(0, 5)
                       .map((item, idx) => (
                         <div key={`${item.name}-${item.variantLabel}`} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#27ae60', minWidth: 24 }}>#{idx + 1}</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success)', minWidth: 24 }}>#{idx + 1}</span>
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f0f0f0' }}>{item.name}</p>
-                            <p style={{ fontSize: '0.75rem', color: '#888' }}>Size: {item.variantLabel} · {item.totalQty} sold</p>
+                            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{item.name}</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Size: {item.variantLabel} · {item.totalQty} sold</p>
                           </div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#27ae60' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--success)' }}>
                             Rs. {item.totalRevenue.toLocaleString()}
                           </span>
                         </div>

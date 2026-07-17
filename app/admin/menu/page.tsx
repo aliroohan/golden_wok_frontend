@@ -111,7 +111,7 @@ export default function MenuPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
                       {item.image
                         ? <img src={item.image} alt={item.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
-                        : <div style={{ width: 40, height: 40, borderRadius: 8, background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🍜</div>
+                        : <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🍜</div>
                       }
                       <span style={{ fontWeight: 600 }}>{item.name}</span>
                     </div>
@@ -128,7 +128,7 @@ export default function MenuPage() {
                   </td>
                   <td>
                     <span className={`badge ${item.available ? 'badge-green' : 'badge-red'}`}>
-                      {item.available ? 'Available' : '86\'d'}
+                      {item.available ? 'Available' : 'Not available'}
                     </span>
                   </td>
                   <td>
@@ -146,7 +146,7 @@ export default function MenuPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: '#555', padding: '2rem' }}>No items found</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No items found</td></tr>}
             </tbody>
           </table>
         </div>
@@ -154,8 +154,8 @@ export default function MenuPage() {
 
       {/* Add/Edit form modal */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-          <div className="card fade-in" style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', border: '1px solid #3a1010' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+          <div className="card fade-in" style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border)' }}>
             <h3 style={{ fontWeight: 700, marginBottom: '1.2rem' }}>{editing ? 'Edit Item' : 'New Menu Item'}</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>

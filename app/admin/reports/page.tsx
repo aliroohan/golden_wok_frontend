@@ -81,16 +81,16 @@ export default function ReportsPage() {
             <div className="grid-3" style={{ marginBottom: '1.2rem' }}>
               <div className="stat-card">
                 <p className="stat-label">Total Sales</p>
-                <p className="stat-value" style={{ color: '#f39c12' }}>Rs. {pl.totalSales.toLocaleString()}</p>
+                <p className="stat-value" style={{ color: 'var(--gold)' }}>Rs. {pl.totalSales.toLocaleString()}</p>
                 <p className="stat-sub">{from} → {to}</p>
               </div>
               <div className="stat-card">
                 <p className="stat-label">Total Expenses</p>
-                <p className="stat-value" style={{ color: '#e74c3c' }}>Rs. {pl.totalExpenses.toLocaleString()}</p>
+                <p className="stat-value" style={{ color: 'var(--danger)' }}>Rs. {pl.totalExpenses.toLocaleString()}</p>
               </div>
-              <div className="stat-card" style={{ borderColor: pl.netProfit >= 0 ? '#1a5e1a' : '#5e1a1a' }}>
+              <div className="stat-card" style={{ borderColor: pl.netProfit >= 0 ? 'var(--success-border)' : 'var(--danger-border)', background: pl.netProfit >= 0 ? 'var(--success-bg)' : 'var(--danger-bg)' }}>
                 <p className="stat-label">Net Profit</p>
-                <p className="stat-value" style={{ color: pl.netProfit >= 0 ? '#27ae60' : '#e74c3c' }}>
+                <p className="stat-value" style={{ color: pl.netProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                   Rs. {pl.netProfit.toLocaleString()}
                 </p>
               </div>
@@ -100,18 +100,18 @@ export default function ReportsPage() {
           {/* Expenses by category */}
           {pl && Object.keys(pl.expensesByCategory).length > 0 && (
             <div className="card" style={{ marginBottom: '1.2rem' }}>
-              <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Expenses Breakdown</h3>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem', color: 'var(--text)' }}>Expenses Breakdown</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {Object.entries(pl.expensesByCategory).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => {
                   const pct = pl.totalExpenses > 0 ? (amt / pl.totalExpenses) * 100 : 0;
                   return (
                     <div key={cat}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem' }}>
-                        <span style={{ color: '#888' }}>{cat}</span>
-                        <span style={{ fontWeight: 600 }}>Rs. {amt.toLocaleString()} <span style={{ color: '#555' }}>({pct.toFixed(1)}%)</span></span>
+                        <span style={{ color: 'var(--text-muted)' }}>{cat}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>Rs. {amt.toLocaleString()} <span style={{ color: 'var(--text-dim)' }}>({pct.toFixed(1)}%)</span></span>
                       </div>
-                      <div style={{ background: '#242424', borderRadius: 4, height: 6 }}>
-                        <div style={{ background: '#e74c3c', borderRadius: 4, height: 6, width: `${pct}%`, transition: 'width 0.5s ease' }} />
+                      <div style={{ background: 'var(--surface-3)', borderRadius: 4, height: 6 }}>
+                        <div style={{ background: 'var(--danger)', borderRadius: 4, height: 6, width: `${pct}%`, transition: 'width 0.5s ease' }} />
                       </div>
                     </div>
                   );
@@ -123,16 +123,16 @@ export default function ReportsPage() {
           {/* Detailed Product Sales List */}
           {productSales && (
             <div className="card" style={{ marginBottom: '1.2rem' }}>
-              <h3 style={{ fontWeight: 700, marginBottom: '1.2rem' }}>Detailed Product Sales</h3>
+              <h3 style={{ fontWeight: 700, marginBottom: '1.2rem', color: 'var(--text)' }}>Detailed Product Sales</h3>
               {productSales.length === 0 ? (
-                <p style={{ color: '#555', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem' }}>
                   No product sales recorded in this date range.
                 </p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #2a2a2a', color: '#888' }}>
+                      <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                         <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Product Name</th>
                         <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Size / Variant</th>
                         <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Qty Sold</th>
@@ -143,14 +143,14 @@ export default function ReportsPage() {
                       {productSales.map((item, idx) => (
                         <tr
                           key={`${item.name}-${item.variantLabel}-${idx}`}
-                          style={{ borderBottom: '1px solid #1f1f1f' }}
+                          style={{ borderBottom: '1px solid var(--border)' }}
                         >
-                          <td style={{ padding: '0.75rem 0.5rem', fontWeight: 500, color: '#f0f0f0' }}>{item.name}</td>
-                          <td style={{ padding: '0.75rem 0.5rem', color: '#aaa' }}>{item.variantLabel || '-'}</td>
-                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 600, color: '#27ae60' }}>
+                          <td style={{ padding: '0.75rem 0.5rem', fontWeight: 500, color: 'var(--text)' }}>{item.name}</td>
+                          <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-muted)' }}>{item.variantLabel || '-'}</td>
+                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>
                             {item.totalQty.toLocaleString()}
                           </td>
-                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 700, color: '#f39c12' }}>
+                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
                             Rs. {item.totalRevenue.toLocaleString()}
                           </td>
                         </tr>

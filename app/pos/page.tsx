@@ -250,38 +250,38 @@ export default function POSPage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f0f0f' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Top bar */}
-      <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.6rem 1rem', background: '#141414', borderBottom: '1px solid #2a2a2a',
-        gap: '1rem', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <header className="pos-header">
+        <div className="pos-header-left">
           <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f39c12' }}>🥢 Golden Wok</span>
           <SyncBanner />
         </div>
 
         {/* Printer connection bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#1e1e1e', padding: '0.3rem 0.6rem', borderRadius: 8, border: '1px solid #2a2a2a' }}>
-          <Printer size={15} color={printerConnected ? '#2ecc71' : '#888'} />
-          <select
-            value={printerSelection}
-            onChange={(e) => handlePrinterSelectionChange(e.target.value)}
-            style={{
-              background: 'none', border: 'none', color: '#fff', fontSize: '0.8rem',
-              fontWeight: 600, outline: 'none', cursor: 'pointer',
-            }}
-          >
-            <option value="browser" style={{ background: '#141414', color: '#fff' }}>Browser PDF Print</option>
-            <option value="58mm" style={{ background: '#141414', color: '#fff' }}>58mm Bluetooth Printer</option>
-          </select>
+        <div className="pos-header-center">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+            <Printer size={15} color={printerConnected ? '#2ecc71' : '#888'} />
+            <select
+              value={printerSelection}
+              onChange={(e) => handlePrinterSelectionChange(e.target.value)}
+              style={{
+                background: 'none', border: 'none', color: '#fff', fontSize: '0.8rem',
+                fontWeight: 600, outline: 'none', cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              <option value="browser" style={{ background: '#141414', color: '#fff' }}>Browser PDF Print</option>
+              <option value="58mm" style={{ background: '#141414', color: '#fff' }}>58mm Bluetooth Printer</option>
+            </select>
+          </div>
           {printerConnected ? (
             <button
               onClick={handleDisconnectPrinter}
               style={{
                 background: '#c0392b', color: '#fff', border: 'none', borderRadius: 4,
-                padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+                padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
               Disconnect
@@ -292,7 +292,7 @@ export default function POSPage() {
               style={{
                 background: '#2980b9', color: '#fff', border: 'none', borderRadius: 4,
                 padding: '0.25rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '0.2rem'
+                display: 'flex', alignItems: 'center', gap: '0.2rem', flexShrink: 0,
               }}
             >
               Connect
@@ -300,8 +300,8 @@ export default function POSPage() {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span style={{ color: '#888', fontSize: '0.82rem' }}>{user.name}</span>
+        <div className="pos-header-right">
+          <span style={{ color: '#888', fontSize: '0.82rem' }} className="pos-btn-text">{user.name}</span>
           <button
             id="nav-sync-menu"
             onClick={handleRefreshMenu}
@@ -310,14 +310,14 @@ export default function POSPage() {
             style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
           >
             <RefreshCw size={13} style={{ animation: syncingMenu ? 'spin 1s linear infinite' : 'none' }} />
-            <span>Sync Menu</span>
+            <span className="pos-btn-text">Sync Menu</span>
           </button>
           <button id="nav-orders" onClick={() => setShowOrders(true)} className="btn btn-ghost btn-sm">
-              <ClipboardList size={14} /> Orders
-            </button>
+            <ClipboardList size={14} /> <span className="pos-btn-text">Orders</span>
+          </button>
           {user.role === 'owner' && (
             <button id="nav-admin" onClick={() => router.push('/admin')} className="btn btn-ghost btn-sm">
-              <LayoutDashboard size={14} /> Admin
+              <LayoutDashboard size={14} /> <span className="pos-btn-text">Admin</span>
             </button>
           )}
           <button id="nav-logout" onClick={logout} className="btn btn-ghost btn-sm">
@@ -353,8 +353,8 @@ export default function POSPage() {
                 style={{
                   flex: 1, padding: '0.45rem 0.2rem', borderRadius: 8, fontWeight: 600, fontSize: '0.72rem',
                   cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                  background: orderType === t ? '#c0392b' : '#2e2e2e',
-                  color: orderType === t ? '#fff' : '#888',
+                  background: orderType === t ? 'var(--red)' : 'var(--surface-2)',
+                  color: orderType === t ? '#fff' : 'var(--text-muted)',
                 }}>
                 {t}
               </button>
@@ -364,17 +364,17 @@ export default function POSPage() {
           <Cart items={cartItems} onQtyChange={qtyChange} onRemove={removeItem} />
 
           {/* Totals & discount */}
-          <div style={{ borderTop: '1px solid #2a2a2a', paddingTop: '0.8rem', marginTop: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem', color: '#888' }}>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.8rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               <span>Subtotal</span><span>Rs. {subtotal.toLocaleString()}</span>
             </div>
             {discount.amount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem', color: '#e74c3c' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem', fontSize: '0.85rem', color: 'var(--danger)' }}>
                 <span>Discount ({discount.reason})</span><span>−Rs. {discount.amount.toLocaleString()}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#f0f0f0', marginBottom: '0.8rem' }}>
-              <span>Total</span><span style={{ color: '#f39c12' }}>Rs. {netTotal.toLocaleString()}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.8rem' }}>
+              <span>Total</span><span style={{ color: 'var(--gold)' }}>Rs. {netTotal.toLocaleString()}</span>
             </div>
 
             {/* Cash received */}
@@ -397,8 +397,8 @@ export default function POSPage() {
                   type="button"
                   onClick={() => setCashReceived(netTotal.toString())}
                   style={{
-                    flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: '#2e2e2e', border: '1px solid #3e3e3e',
-                    borderRadius: 8, color: '#fff', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
+                    flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    borderRadius: 8, color: 'var(--text)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
                   }}
                   className="card-hover"
                   title="Exact amount"
@@ -434,8 +434,8 @@ export default function POSPage() {
                       type="button"
                       onClick={() => setCashReceived(val.toString())}
                       style={{
-                        flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: '#1a2f1c', border: '1px solid #27452a',
-                        borderRadius: 8, color: '#4ade80', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
+                        flex: 1, minWidth: '60px', padding: '0.35rem 0.2rem', background: 'var(--success-bg)', border: '1px solid var(--success-border)',
+                        borderRadius: 8, color: 'var(--success)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
                       }}
                       className="card-hover"
                     >
@@ -447,7 +447,7 @@ export default function POSPage() {
             </div>
 
             {cash > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', fontSize: '0.9rem', color: change >= 0 ? '#2ecc71' : '#e74c3c' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', fontSize: '0.9rem', color: 'var(--success)' }}>
                 <span>Change</span><span style={{ fontWeight: 700 }}>Rs. {change.toLocaleString()}</span>
               </div>
             )}
@@ -495,8 +495,6 @@ export default function POSPage() {
           onSelect={(variantId, variantLabel, price, qty) => {
             addToCart({ menuItemId: pickerItem._id, menuItemName: pickerItem.name, variantId, variantLabel, qty, priceAtSale: price });
             setPickerItem(null);
-            // Auto open cart drawer on mobile to show the newly added item
-            if (window.innerWidth < 1024) setIsCartOpen(true);
           }}
           onClose={() => setPickerItem(null)}
         />
@@ -507,12 +505,12 @@ export default function POSPage() {
       {showOrders && <TodayOrdersDrawer onClose={() => setShowOrders(false)} />}
       {lastOrder && (
         <div className="fade-in" style={{
-          position: 'fixed', bottom: 20, right: 20, background: '#0a2e0a', border: '1px solid #1a5e1a',
-          borderRadius: 12, padding: '0.8rem 1.2rem', color: '#2ecc71', fontSize: '0.9rem', fontWeight: 600,
+          position: 'fixed', bottom: 20, right: 20, background: 'var(--success-bg)', border: '1px solid var(--success-border)',
+          borderRadius: 12, padding: '0.8rem 1.2rem', color: 'var(--success)', fontSize: '0.9rem', fontWeight: 600,
           display: 'flex', gap: '0.5rem', alignItems: 'center', zIndex: 300,
         }}>
           ✅ Order #{lastOrder.id.slice(-6).toUpperCase()} saved &amp; receipt printed
-          <button onClick={() => setLastOrder(null)} style={{ background: 'none', border: 'none', color: '#2ecc71', cursor: 'pointer', marginLeft: 4 }}>×</button>
+          <button onClick={() => setLastOrder(null)} style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', marginLeft: 4 }}>×</button>
         </div>
       )}
     </div>

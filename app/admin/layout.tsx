@@ -25,12 +25,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading || !user) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#0f0f0f' }}>
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)' }}>
       {/* Sidebar */}
-      <nav style={{ width: 200, flexShrink: 0, background: '#141414', borderRight: '1px solid #242424', display: 'flex', flexDirection: 'column', padding: '1rem 0.6rem' }}>
-        <div style={{ padding: '0.5rem 0.6rem 1.5rem', borderBottom: '1px solid #2a2a2a', marginBottom: '1rem' }}>
-          <p style={{ fontWeight: 800, fontSize: '1rem', color: '#f39c12' }}>🥢 Golden Wok</p>
-          <p style={{ fontSize: '0.72rem', color: '#555', marginTop: 2 }}>Admin Panel</p>
+      <nav style={{ width: 200, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '1rem 0.6rem' }}>
+        <div style={{ padding: '0.5rem 0.6rem 1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+          <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--gold)' }}>🥢 Golden Wok</p>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>Admin Panel</p>
         </div>
 
         {NAV.map(({ href, label, icon: Icon, exact }) => {
@@ -40,8 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.8rem',
               borderRadius: 10, marginBottom: '0.2rem', textDecoration: 'none',
               fontWeight: 600, fontSize: '0.85rem',
-              background: active ? '#c0392b' : 'transparent',
-              color: active ? '#fff' : '#888',
+              background: active ? 'var(--red)' : 'transparent',
+              color: active ? '#fff' : 'var(--text-muted)',
               transition: 'all 0.15s',
             }}>
               <Icon size={16} />
@@ -50,11 +50,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           );
         })}
 
-        <div style={{ marginTop: 'auto', borderTop: '1px solid #2a2a2a', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-          <Link href="/pos" id="nav-pos" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0.8rem', borderRadius: 10, textDecoration: 'none', color: '#888', fontSize: '0.82rem' }}>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <Link href="/pos" id="nav-pos" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0.8rem', borderRadius: 10, textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
             <MonitorSmartphone size={15} /> Go to POS
           </Link>
-          <button id="nav-logout" onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0.8rem', borderRadius: 10, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.82rem', width: '100%' }}>
+          <button id="nav-logout" onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0.8rem', borderRadius: 10, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.82rem', width: '100%' }}>
             <LogOut size={15} /> Sign Out
           </button>
         </div>

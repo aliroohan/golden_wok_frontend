@@ -89,7 +89,15 @@ export async function connectBluetoothPrinter(): Promise<string> {
   try {
     const device = await nav.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      optionalServices: [
+        '000018f0-0000-1000-8000-00805f9b34fb', // Standard printer service
+        '000018f1-0000-1000-8000-00805f9b34fb', // Standard printer variation
+        '00001101-0000-1000-8000-00805f9b34fb', // SPP Serial Port Profile
+        '0000ff00-0000-1000-8000-00805f9b34fb', // Common custom printer service (Hoin, etc.)
+        '0000fee7-0000-1000-8000-00805f9b34fb', // WeChat custom service / generic printer
+        '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC BLE SPP profile
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // generic printer
+      ]
     });
 
     const server = await device.gatt?.connect();
@@ -97,13 +105,15 @@ export async function connectBluetoothPrinter(): Promise<string> {
 
     let service;
     try {
+      // Try standard first
       service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
     } catch (e) {
+      // Fallback: discover all primary services allowed by optionalServices
       const services = await server.getPrimaryServices();
       if (services.length > 0) {
         service = services[0];
       } else {
-        throw new Error('No services found on printer');
+        throw new Error('No services found on printer. Ensure printer BLE is advertised.');
       }
     }
 
