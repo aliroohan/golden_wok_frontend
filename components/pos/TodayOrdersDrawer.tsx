@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, RefreshCw, XCircle } from 'lucide-react';
+import { X, RefreshCw, XCircle, Printer } from 'lucide-react';
 import api from '@/lib/api';
+import { printReceipt } from './ReceiptPrinter';
 
 interface OrderItem {
   menuItemName: string;
@@ -75,6 +76,29 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
     } finally {
       setCancelling(null);
     }
+  };
+
+  const handleReprint = (order: Order) => {
+    const receiptData = {
+      orderId: order._id,
+      orderType: order.orderType,
+      items: order.items.map((item) => ({
+        menuItemId: '',
+        menuItemName: item.menuItemName,
+        variantId: '',
+        variantLabel: item.variantLabel,
+        qty: item.qty,
+        priceAtSale: item.priceAtSale,
+      })),
+      subtotal: order.subtotal,
+      discount: order.discount,
+      netTotal: order.netTotal,
+      cashReceived: order.cashReceived,
+      change: order.change,
+      cashierName: order.cashier?.name || 'Cashier',
+      createdAt: new Date(order.createdAt),
+    };
+    printReceipt(receiptData);
   };
 
   const todayTotal = orders.filter((o) => o.status === 'completed').reduce((s, o) => s + o.netTotal, 0);
@@ -164,6 +188,19 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                         Rs. {order.netTotal.toLocaleString()}
                       </span>
 
+                      {/* Reprint button */}
+                      {!isCancelled && (
+                        <button
+                          id={`print-order-${order._id}`}
+                          onClick={(e) => { e.stopPropagation(); handleReprint(order); }}
+                          className="btn btn-ghost btn-sm"
+                          title="Reprint receipt"
+                          style={{ flexShrink: 0, padding: '0.3rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Printer size={14} />
+                        </button>
+                      )}
+
                       {/* Cancel button */}
                       {!isCancelled && (
                         <button
@@ -205,6 +242,19 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#888', paddingTop: '0.2rem' }}>
                             <span>Cash / Change</span>
                             <span>Rs. {order.cashReceived.toLocaleString()} / Rs. {order.change.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {!isCancelled && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.6rem', borderTop: '1px solid #2a2a2a', paddingTop: '0.6rem' }}>
+                            <button
+                              id={`expanded-print-${order._id}`}
+                              onClick={() => handleReprint(order)}
+                              className="btn btn-ghost btn-sm"
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                            >
+                              <Printer size={13} />
+                              Reprint Receipt
+                            </button>
                           </div>
                         )}
                       </div>
