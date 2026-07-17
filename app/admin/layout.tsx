@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
-import { LayoutDashboard, UtensilsCrossed, ReceiptText, BarChart3, Users, LogOut, Tag, MonitorSmartphone } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LayoutDashboard, UtensilsCrossed, ReceiptText, BarChart3, Users, LogOut, MonitorSmartphone, Menu, X } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -17,20 +17,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'owner')) router.replace('/login');
   }, [user, loading, router]);
 
+  // Automatically close sidebar when pathname changes on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   if (loading || !user) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)' }}>
+    <div className="admin-layout">
+      {/* Sidebar Overlay */}
+      <div 
+        className={`admin-sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* Sidebar */}
-      <nav style={{ width: 200, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '1rem 0.6rem' }}>
-        <div style={{ padding: '0.5rem 0.6rem 1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
-          <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--gold)' }}>🥢 Golden Wok</p>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>Admin Panel</p>
+      <nav className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.6rem 1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+          <div>
+            <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--gold)' }}>🥢 Golden Wok</p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>Admin Panel</p>
+          </div>
+          <button 
+            className="admin-sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {NAV.map(({ href, label, icon: Icon, exact }) => {
@@ -60,10 +81,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </nav>
 
-      {/* Content */}
-      <main style={{ flex: 1, overflowY: 'auto' }}>
-        {children}
-      </main>
+      {/* Content wrapper */}
+      <div className="admin-content">
+        <header className="admin-mobile-header">
+          <button 
+            id="admin-sidebar-toggle"
+            onClick={() => setSidebarOpen(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Menu size={22} />
+          </button>
+          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--gold)', userSelect: 'none' }}>🥢 Golden Wok Admin</span>
+        </header>
+
+        <main style={{ flex: 1, overflowY: 'auto' }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
