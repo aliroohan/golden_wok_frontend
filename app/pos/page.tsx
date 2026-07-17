@@ -266,13 +266,13 @@ export default function POSPage() {
               value={printerSelection}
               onChange={(e) => handlePrinterSelectionChange(e.target.value)}
               style={{
-                background: 'none', border: 'none', color: '#fff', fontSize: '0.8rem',
+                background: 'none', border: 'none', color: '#000000ff', fontSize: '0.8rem',
                 fontWeight: 600, outline: 'none', cursor: 'pointer',
                 width: '100%',
               }}
             >
-              <option value="browser" style={{ background: '#141414', color: '#fff' }}>Browser PDF Print</option>
-              <option value="58mm" style={{ background: '#141414', color: '#fff' }}>58mm Bluetooth Printer</option>
+              <option value="browser" style={{ background: '#dfdfdfff', color: '#0d0d0dff' }}>Browser PDF Print</option>
+              <option value="58mm" style={{ background: '#f7f7f7ff', color: '#000000ff' }}>58mm Bluetooth Printer</option>
             </select>
           </div>
           {printerConnected ? (
