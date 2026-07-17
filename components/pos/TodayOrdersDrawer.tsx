@@ -4,6 +4,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { X, RefreshCw, XCircle, Printer } from 'lucide-react';
 import api from '@/lib/api';
 import { printReceipt } from './ReceiptPrinter';
+import { db } from '@/lib/db';
+
+const getLocalDateString = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 interface OrderItem {
   menuItemName: string;
@@ -44,6 +52,7 @@ const ORDER_TYPE_LABEL: Record<string, string> = {
 };
 
 export default function TodayOrdersDrawer({ onClose }: Props) {
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString(new Date()));
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -54,25 +63,76 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.get('/orders');
+      const { data } = await api.get('/orders', {
+        params: { from: selectedDate, to: selectedDate }
+      });
       setOrders(data.orders);
-    } catch {
-      setError('Could not load orders. Are you offline?');
+    } catch (err) {
+      console.warn('⚠️ Fetching orders from server failed, falling back to local database:', err);
+      try {
+        const localOrders = await db.orders.toArray();
+        const mapped = localOrders
+          .map((o) => ({
+            _id: o.localId,
+            localId: o.localId,
+            orderType: o.orderType,
+            items: o.items.map((i) => ({
+              menuItemName: i.menuItemName,
+              variantLabel: i.variantLabel,
+              qty: i.qty,
+              priceAtSale: i.priceAtSale,
+            })),
+            subtotal: o.subtotal,
+            discount: o.discount,
+            netTotal: o.netTotal,
+            cashReceived: o.cashReceived,
+            change: o.change,
+            status: o.status,
+            cashier: { name: o.cashierName, username: '' },
+            createdAt: o.createdAt,
+          }))
+          .filter((o) => {
+            const orderDateStr = getLocalDateString(new Date(o.createdAt));
+            return orderDateStr === selectedDate;
+          })
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setOrders(mapped);
+      } catch (dbErr) {
+        setError('Could not load orders. Are you offline?');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedDate]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, selectedDate]);
 
   const handleCancel = async (order: Order) => {
     if (!confirm(`Cancel order #${order.localId.slice(-6).toUpperCase()}?\nTotal: Rs. ${order.netTotal.toLocaleString()}\n\nThis cannot be undone.`)) return;
     setCancelling(order._id);
     try {
       await api.put(`/orders/${order._id}/cancel`);
+      // Update local db if online cancel succeeds
+      try {
+        await db.orders.where('localId').equals(order.localId).modify({ status: 'voided', synced: true });
+      } catch (dbErr) {
+        console.error('Failed to sync void status to local DB:', dbErr);
+      }
       setOrders((prev) => prev.map((o) => o._id === order._id ? { ...o, status: 'voided' } : o));
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Could not cancel order');
+      const isOffline = !navigator.onLine || err.message === 'Network Error' || !err.response;
+      if (isOffline) {
+        try {
+          await db.orders.where('localId').equals(order.localId).modify({ status: 'voided', synced: false });
+          setOrders((prev) => prev.map((o) => o._id === order._id ? { ...o, status: 'voided' } : o));
+          alert('Order cancelled offline. This cancellation will sync when online.');
+        } catch (dbErr) {
+          alert('Could not cancel order locally');
+        }
+      } else {
+        alert(err?.response?.data?.message || 'Could not cancel order');
+      }
     } finally {
       setCancelling(null);
     }
@@ -119,20 +179,43 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
         }}
       >
         {/* Header */}
-        <div style={{ padding: '1rem', borderBottom: '1px solid #2a2a2a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>Today&apos;s Orders</h3>
-            <p style={{ color: '#888', fontSize: '0.8rem', marginTop: 2 }}>
-              {completedCount} completed · Rs. {todayTotal.toLocaleString()} total
-            </p>
+        <div style={{ padding: '1rem', borderBottom: '1px solid #2a2a2a' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+            <div>
+              <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>Orders History</h3>
+              <p style={{ color: '#888', fontSize: '0.8rem', marginTop: 2 }}>
+                {completedCount} completed · Rs. {todayTotal.toLocaleString()} total
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button id="orders-refresh" onClick={load} className="btn btn-ghost btn-sm" title="Refresh">
+                <RefreshCw size={14} />
+              </button>
+              <button id="orders-close" onClick={onClose} className="btn btn-ghost btn-sm">
+                <X size={16} />
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button id="orders-refresh" onClick={load} className="btn btn-ghost btn-sm" title="Refresh">
-              <RefreshCw size={14} />
-            </button>
-            <button id="orders-close" onClick={onClose} className="btn btn-ghost btn-sm">
-              <X size={16} />
-            </button>
+
+          {/* Date Picker Input */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '0.8rem', color: '#888' }}>Date:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{
+                background: '#222',
+                border: '1px solid #333',
+                borderRadius: 8,
+                padding: '0.35rem 0.6rem',
+                color: '#fff',
+                fontSize: '0.8rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+                flex: 1
+              }}
+            />
           </div>
         </div>
 
@@ -145,7 +228,7 @@ export default function TodayOrdersDrawer({ onClose }: Props) {
           ) : error ? (
             <p style={{ color: '#e74c3c', textAlign: 'center', padding: '2rem', fontSize: '0.9rem' }}>{error}</p>
           ) : orders.length === 0 ? (
-            <p style={{ color: '#555', textAlign: 'center', padding: '3rem', fontSize: '0.9rem' }}>No orders today yet</p>
+            <p style={{ color: '#555', textAlign: 'center', padding: '3rem', fontSize: '0.9rem' }}>No orders found for this date</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {orders.map((order) => {
