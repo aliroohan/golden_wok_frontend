@@ -282,7 +282,23 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
   win.document.write(html);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); win.close(); }, 400);
+  // Wait for full render before triggering print
+  win.onload = () => {
+    win.print();
+    // Close only AFTER the print dialog is dismissed
+    win.addEventListener('afterprint', () => {
+      setTimeout(() => win.close(), 200);
+    });
+  };
+  // Fallback: if onload never fires (some browsers), use a longer timeout
+  setTimeout(() => {
+    if (!win.closed) {
+      win.print();
+      win.addEventListener('afterprint', () => {
+        setTimeout(() => win.close(), 200);
+      });
+    }
+  }, 800);
 }
 
 export async function printReceiptBluetooth(data: ReceiptData): Promise<void> {
