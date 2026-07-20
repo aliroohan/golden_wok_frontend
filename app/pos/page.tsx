@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { getCachedMenu, saveOrderLocally, startSyncListener, syncPendingOrders, seedMenuCache } from '@/lib/sync';
 import { CachedCategory, CachedMenuItem } from '@/lib/db';
-import CategorySidebar from '@/components/pos/CategorySidebar';
+import CategorySidebar, { ALL_CATEGORY_ID } from '@/components/pos/CategorySidebar';
 import ItemGrid from '@/components/pos/ItemGrid';
 import Cart, { CartItem } from '@/components/pos/Cart';
 import VariantPicker from '@/components/pos/VariantPicker';
@@ -30,7 +30,7 @@ export default function POSPage() {
 
   const [categories, setCategories] = useState<CachedCategory[]>([]);
   const [allItems, setAllItems] = useState<CachedMenuItem[]>([]);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [selectedCat, setSelectedCat] = useState<string | null>(ALL_CATEGORY_ID);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<OrderType>('dine-in');
   const [discount, setDiscount] = useState({ amount: 0, reason: '' });
@@ -48,6 +48,7 @@ export default function POSPage() {
   const [printerDeviceName, setPrinterDeviceName] = useState('');
   const [printerSelection, setPrinterSelection] = useState('browser');
   const [syncingMenu, setSyncingMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Initialize printer state from localStorage & actual status on mount
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function POSPage() {
       if (categories.length > 0) {
         setCategories(categories);
         setAllItems(items);
-        setSelectedCat(categories[0]._id);
+        // Don't override selectedCat — keep 'All' as the default
       }
 
       // 2. If online, sync/seed menu cache in the background and update state when ready
@@ -116,8 +117,11 @@ export default function POSPage() {
             setCategories(fresh.categories);
             setAllItems(fresh.items);
             setSelectedCat((prev) => {
-              if (prev && fresh.categories.some((c) => c._id === prev)) return prev;
-              return fresh.categories[0]._id;
+              // Only fall back if the previously selected real category no longer exists
+              // Keep ALL_CATEGORY_ID or any still-valid category as-is
+              if (!prev || prev === ALL_CATEGORY_ID) return prev;
+              if (fresh.categories.some((c) => c._id === prev)) return prev;
+              return ALL_CATEGORY_ID;
             });
           }
         } catch (e) {
@@ -155,7 +159,15 @@ export default function POSPage() {
   };
 
 
-  const visibleItems = allItems.filter((i) => i.category._id === selectedCat);
+  const q = searchQuery.trim().toLowerCase();
+  const visibleItems = q
+    // Search mode: ignore category, filter all items by name
+    ? allItems.filter((i) => i.name.toLowerCase().includes(q))
+    // All category: show every item
+    : selectedCat === ALL_CATEGORY_ID
+    ? allItems
+    // Normal category filter
+    : allItems.filter((i) => i.category._id === selectedCat);
 
   // Cart handlers
   const addItem = (item: CachedMenuItem) => {
@@ -243,6 +255,13 @@ export default function POSPage() {
     setIsCartOpen(false);
     setCheckingOut(false);
   };
+
+  // Auto-dismiss the success toast after 3 seconds
+  useEffect(() => {
+    if (!lastOrder) return;
+    const t = setTimeout(() => setLastOrder(null), 3000);
+    return () => clearTimeout(t);
+  }, [lastOrder]);
 
   if (loading || !user) {
     return (
@@ -336,6 +355,41 @@ export default function POSPage() {
 
         {/* Item grid */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Local search bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.5rem 0.8rem', borderBottom: '1px solid var(--border)',
+            background: 'var(--surface)',
+          }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '1rem', flexShrink: 0 }}>🔍</span>
+            <input
+              id="item-search"
+              type="search"
+              placeholder="Search items…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '0.4rem 0.7rem',
+                color: 'var(--text)',
+                fontSize: '0.9rem',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-muted)',
+                  cursor: 'pointer', fontSize: '1.1rem', lineHeight: 1, flexShrink: 0,
+                }}
+                title="Clear search"
+              >×</button>
+            )}
+          </div>
           <ItemGrid items={visibleItems} onAdd={addItem} />
         </main>
 

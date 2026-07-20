@@ -11,7 +11,7 @@ export default function ItemGrid({ items, onAdd }: Props) {
   if (items.length === 0) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-muted)' }}>
-        No items in this category
+        No items found
       </div>
     );
   }
