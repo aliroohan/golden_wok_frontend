@@ -1,6 +1,5 @@
 'use client';
 import { CartItem } from './Cart';
-import { jsPDF } from 'jspdf';
 
 export interface ReceiptData {
   orderId: string;
@@ -166,26 +165,48 @@ function buildReceiptHTML(data: ReceiptData): string {
     <html>
     <head>
       <meta charset="UTF-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <style>
+        /*
+         * @page tells the browser (and Save as PDF) to use 80mm thermal
+         * receipt paper. "auto" height means the page grows to fit content.
+         * This prevents the layout from breaking when you change paper
+         * settings in the print dialog.
+         */
+        @page {
+          size: 80mm auto;
+          margin: 4mm 5mm;
+        }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: 'Courier New', monospace; font-size: 12px; width: 280px; padding: 8px; }
-        h1 { font-size:16px; text-align:center; font-weight:bold; margin-bottom:2px; }
-        .sub { text-align:center; font-size:10px; color:#555; margin-bottom:6px; }
-        .divider { border-top:1px dashed #000; margin:5px 0; }
+        /*
+         * width:100% fills whatever the @page size dictates.
+         * Never use a hardcoded pixel width — that causes the
+         * "error in preview" when the user changes paper settings.
+         */
+        body {
+          font-family: 'Courier New', monospace;
+          font-size: 11px;
+          width: 100%;
+          background: #fff;
+          color: #000;
+        }
+        h1 { font-size:15px; text-align:center; font-weight:bold; margin-bottom:2px; }
+        .sub { text-align:center; font-size:9px; color:#444; margin-bottom:5px; }
+        .divider { border-top:1px dashed #000; margin:4px 0; }
         table { width:100%; border-collapse:collapse; }
-        td { padding:2px 0; font-size:11px; }
-        .totals td { font-size:12px; }
-        .grand td { font-size:14px; font-weight:bold; }
-        .footer { text-align:center; font-size:10px; margin-top:8px; }
+        td { padding:2px 0; font-size:10px; vertical-align:top; }
+        .totals td { font-size:11px; }
+        .grand td { font-size:13px; font-weight:bold; }
+        .footer { text-align:center; font-size:9px; margin-top:6px; }
       </style>
     </head>
     <body>
-      <h1>🥢 Golden Wok</h1>
+      <h1>Golden Wok</h1>
       <p class="sub">Chinese Restaurant</p>
       <div class="divider"></div>
-      <p style="font-size:10px">${date} ${time} · ${data.orderType.toUpperCase()}</p>
-      <p style="font-size:10px">Cashier: ${data.cashierName}</p>
-      <p style="font-size:10px">Order: #${data.orderId.slice(-6).toUpperCase()}</p>
+      <p style="font-size:9px">${date} ${time} &middot; ${data.orderType.toUpperCase()}</p>
+      <p style="font-size:9px">Cashier: ${data.cashierName}</p>
+      <p style="font-size:9px">Order: #${data.orderId.slice(-6).toUpperCase()}</p>
       <div class="divider"></div>
       <table>
         <thead><tr><td><b>Item</b></td><td style="text-align:center"><b>Qty</b></td><td style="text-align:right"><b>Total</b></td></tr></thead>
@@ -200,8 +221,8 @@ function buildReceiptHTML(data: ReceiptData): string {
       <div class="divider"></div>
       <table class="grand">
         <tr><td>TOTAL</td><td style="text-align:right">Rs.${data.netTotal.toLocaleString()}</td></tr>
-        <tr style="font-size:12px;font-weight:normal"><td>Cash</td><td style="text-align:right">Rs.${data.cashReceived.toLocaleString()}</td></tr>
-        <tr style="font-size:12px;font-weight:normal"><td>Change</td><td style="text-align:right">Rs.${data.change.toLocaleString()}</td></tr>
+        <tr style="font-size:11px;font-weight:normal"><td>Cash</td><td style="text-align:right">Rs.${data.cashReceived.toLocaleString()}</td></tr>
+        <tr style="font-size:11px;font-weight:normal"><td>Change</td><td style="text-align:right">Rs.${data.change.toLocaleString()}</td></tr>
       </table>
       <div class="divider"></div>
       <p class="footer">Thank you for dining with us!<br/>Please visit again</p>
@@ -276,147 +297,57 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
     }
   }
 
-  // Mobile: generate and download a PDF directly (no printer needed)
-  if (isMobileDevice()) {
-    saveReceiptAsPDF(data);
-    return;
-  }
-
-  // Desktop browser print fallback
-  const html = buildReceiptHTML(data);
-  const win = window.open('', '_blank', 'width=320,height=600');
-  if (!win) { alert('Please allow popups to print receipt'); return; }
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  // Wait for full render before triggering print
-  win.onload = () => {
-    win.print();
-    // Close only AFTER the print dialog is dismissed
-    win.addEventListener('afterprint', () => {
-      setTimeout(() => win.close(), 200);
-    });
-  };
-  // Fallback: if onload never fires (some browsers), use a longer timeout
-  setTimeout(() => {
-    if (!win.closed) {
-      win.print();
-      win.addEventListener('afterprint', () => {
-        setTimeout(() => win.close(), 200);
-      });
-    }
-  }, 800);
-}
-
-/** Returns true when running on a mobile/tablet browser */
-function isMobileDevice(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
+  // Browser / mobile print fallback (uses hidden iframe — works on mobile where
+  // window.open() popups are blocked, and gives a proper @page-sized preview).
+  printViaIframe(buildReceiptHTML(data));
 }
 
 /**
- * Generates a thermal-receipt-style PDF and triggers a download.
- * Works on Android & iOS without needing a printer.
+ * Injects a hidden <iframe> into the current document, writes the receipt HTML
+ * into it, then calls contentWindow.print(). This approach:
+ *  - Works on mobile browsers (no popup needed)
+ *  - Respects @page CSS so the preview never breaks when paper is changed
+ *  - Cleans up the iframe after the dialog closes
  */
-export function saveReceiptAsPDF(data: ReceiptData): void {
-  const date = data.createdAt.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
-  const time = data.createdAt.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true });
+function printViaIframe(html: string): void {
+  // Remove any leftover iframe from a previous print
+  const old = document.getElementById('receipt-print-frame');
+  if (old) old.remove();
 
-  // 80mm thermal receipt width ≈ 80mm, arbitrary height (jsPDF auto-grows)
-  const pageW = 80;   // mm
-  const margin = 4;   // mm
-  const contentW = pageW - margin * 2;
+  const iframe = document.createElement('iframe');
+  iframe.id = 'receipt-print-frame';
+  // Position off-screen — must be attached to DOM for printing to work
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
+  document.body.appendChild(iframe);
 
-  // Estimate height: header(30) + items(8 each) + totals(40) + footer(20)
-  const estimatedH = 30 + data.items.length * 8 + 60 + 20;
-  const doc = new jsPDF({ unit: 'mm', format: [pageW, Math.max(estimatedH, 120)], orientation: 'portrait' });
-
-  let y = margin;
-  const lx = margin;          // left x
-  const rx = pageW - margin;  // right x
-
-  const setFont = (size: number, style: 'normal' | 'bold' = 'normal') => {
-    doc.setFont('courier', style);
-    doc.setFontSize(size);
-  };
-
-  const drawDivider = () => {
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(lx, y, rx, y);
-    doc.setLineDashPattern([], 0);
-    y += 3;
-  };
-
-  const writeCenter = (text: string, size = 9, bold: 'normal' | 'bold' = 'normal') => {
-    setFont(size, bold);
-    doc.text(text, pageW / 2, y, { align: 'center' });
-    y += size * 0.45 + 1;
-  };
-
-  const writeLR = (left: string, right: string, size = 8, bold: 'normal' | 'bold' = 'normal') => {
-    setFont(size, bold);
-    doc.text(left, lx, y);
-    doc.text(right, rx, y, { align: 'right' });
-    y += size * 0.45 + 1;
-  };
-
-  const writeLeft = (text: string, size = 8) => {
-    setFont(size);
-    doc.text(text, lx, y);
-    y += size * 0.45 + 1;
-  };
-
-  // ── Header ──
-  writeCenter('Golden Wok', 12, 'bold');
-  writeCenter('Chinese Restaurant', 8);
-  y += 1;
-  drawDivider();
-  writeLeft(`${date}  ${time}  ${data.orderType.toUpperCase()}`);
-  writeLeft(`Cashier: ${data.cashierName}`);
-  writeLeft(`Order: #${data.orderId.slice(-6).toUpperCase()}`);
-  drawDivider();
-
-  // ── Items header ──
-  writeLR('Item', 'Total', 8, 'bold');
-  drawDivider();
-
-  // ── Items ──
-  for (const item of data.items) {
-    const label = `${item.menuItemName} (${item.variantLabel})`;
-    const price  = `Rs.${(item.qty * item.priceAtSale).toLocaleString()}`;
-    setFont(8);
-    // Wrap long item names
-    const lines = doc.splitTextToSize(`x${item.qty}  ${label}`, contentW - 18);
-    doc.text(lines, lx, y);
-    doc.text(price, rx, y, { align: 'right' });
-    y += (lines.length * 4) + 1;
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) {
+    console.error('Could not access iframe document');
+    iframe.remove();
+    return;
   }
 
-  drawDivider();
+  doc.open();
+  doc.write(html);
+  doc.close();
 
-  // ── Totals ──
-  writeLR('Subtotal', `Rs.${data.subtotal.toLocaleString()}`);
-  if (data.discount.amount > 0) {
-    writeLR(`Disc (${data.discount.reason})`, `-Rs.${data.discount.amount.toLocaleString()}`);
-  }
-  if (data.deliveryFee && data.deliveryFee > 0) {
-    writeLR('Delivery Fee', `Rs.${data.deliveryFee.toLocaleString()}`);
-  }
-  drawDivider();
-  writeLR('TOTAL', `Rs.${data.netTotal.toLocaleString()}`, 10, 'bold');
-  writeLR('Cash', `Rs.${data.cashReceived.toLocaleString()}`, 8);
-  writeLR('Change', `Rs.${data.change.toLocaleString()}`, 8);
-  drawDivider();
-
-  // ── Footer ──
-  writeCenter('Thank you for dining with us!', 8);
-  writeCenter('Please visit again', 8);
-
-  const filename = `GoldenWok-${data.orderId.slice(-6).toUpperCase()}.pdf`;
-  doc.save(filename);
-}
+  // Wait for iframe content to fully render, then print
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (e) {
+      console.error('iframe print failed:', e);
+    }
+    // Clean up after dialog is dismissed
+    iframe.contentWindow?.addEventListener('afterprint', () => {
+      setTimeout(() => iframe.remove(), 300);
+    });
+    // Safety cleanup if afterprint never fires (some mobile browsers)
+    setTimeout(() => {
+      if (document.getElementById('receipt-print-frame')) iframe.remove();
+    }, 60000);
+  };
 
 export async function printReceiptBluetooth(data: ReceiptData): Promise<void> {
   await printReceipt(data, false);
