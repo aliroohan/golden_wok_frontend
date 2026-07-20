@@ -1,5 +1,6 @@
 'use client';
 import { CartItem } from './Cart';
+import { jsPDF } from 'jspdf';
 
 export interface ReceiptData {
   orderId: string;
@@ -275,7 +276,13 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
     }
   }
 
-  // Browser print fallback
+  // Mobile: generate and download a PDF directly (no printer needed)
+  if (isMobileDevice()) {
+    saveReceiptAsPDF(data);
+    return;
+  }
+
+  // Desktop browser print fallback
   const html = buildReceiptHTML(data);
   const win = window.open('', '_blank', 'width=320,height=600');
   if (!win) { alert('Please allow popups to print receipt'); return; }
@@ -299,6 +306,116 @@ export async function printReceipt(data: ReceiptData, forceBrowser: boolean = fa
       });
     }
   }, 800);
+}
+
+/** Returns true when running on a mobile/tablet browser */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+
+/**
+ * Generates a thermal-receipt-style PDF and triggers a download.
+ * Works on Android & iOS without needing a printer.
+ */
+export function saveReceiptAsPDF(data: ReceiptData): void {
+  const date = data.createdAt.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+  const time = data.createdAt.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  // 80mm thermal receipt width ≈ 80mm, arbitrary height (jsPDF auto-grows)
+  const pageW = 80;   // mm
+  const margin = 4;   // mm
+  const contentW = pageW - margin * 2;
+
+  // Estimate height: header(30) + items(8 each) + totals(40) + footer(20)
+  const estimatedH = 30 + data.items.length * 8 + 60 + 20;
+  const doc = new jsPDF({ unit: 'mm', format: [pageW, Math.max(estimatedH, 120)], orientation: 'portrait' });
+
+  let y = margin;
+  const lx = margin;          // left x
+  const rx = pageW - margin;  // right x
+
+  const setFont = (size: number, style: 'normal' | 'bold' = 'normal') => {
+    doc.setFont('courier', style);
+    doc.setFontSize(size);
+  };
+
+  const drawDivider = () => {
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(lx, y, rx, y);
+    doc.setLineDashPattern([], 0);
+    y += 3;
+  };
+
+  const writeCenter = (text: string, size = 9, bold: 'normal' | 'bold' = 'normal') => {
+    setFont(size, bold);
+    doc.text(text, pageW / 2, y, { align: 'center' });
+    y += size * 0.45 + 1;
+  };
+
+  const writeLR = (left: string, right: string, size = 8, bold: 'normal' | 'bold' = 'normal') => {
+    setFont(size, bold);
+    doc.text(left, lx, y);
+    doc.text(right, rx, y, { align: 'right' });
+    y += size * 0.45 + 1;
+  };
+
+  const writeLeft = (text: string, size = 8) => {
+    setFont(size);
+    doc.text(text, lx, y);
+    y += size * 0.45 + 1;
+  };
+
+  // ── Header ──
+  writeCenter('Golden Wok', 12, 'bold');
+  writeCenter('Chinese Restaurant', 8);
+  y += 1;
+  drawDivider();
+  writeLeft(`${date}  ${time}  ${data.orderType.toUpperCase()}`);
+  writeLeft(`Cashier: ${data.cashierName}`);
+  writeLeft(`Order: #${data.orderId.slice(-6).toUpperCase()}`);
+  drawDivider();
+
+  // ── Items header ──
+  writeLR('Item', 'Total', 8, 'bold');
+  drawDivider();
+
+  // ── Items ──
+  for (const item of data.items) {
+    const label = `${item.menuItemName} (${item.variantLabel})`;
+    const price  = `Rs.${(item.qty * item.priceAtSale).toLocaleString()}`;
+    setFont(8);
+    // Wrap long item names
+    const lines = doc.splitTextToSize(`x${item.qty}  ${label}`, contentW - 18);
+    doc.text(lines, lx, y);
+    doc.text(price, rx, y, { align: 'right' });
+    y += (lines.length * 4) + 1;
+  }
+
+  drawDivider();
+
+  // ── Totals ──
+  writeLR('Subtotal', `Rs.${data.subtotal.toLocaleString()}`);
+  if (data.discount.amount > 0) {
+    writeLR(`Disc (${data.discount.reason})`, `-Rs.${data.discount.amount.toLocaleString()}`);
+  }
+  if (data.deliveryFee && data.deliveryFee > 0) {
+    writeLR('Delivery Fee', `Rs.${data.deliveryFee.toLocaleString()}`);
+  }
+  drawDivider();
+  writeLR('TOTAL', `Rs.${data.netTotal.toLocaleString()}`, 10, 'bold');
+  writeLR('Cash', `Rs.${data.cashReceived.toLocaleString()}`, 8);
+  writeLR('Change', `Rs.${data.change.toLocaleString()}`, 8);
+  drawDivider();
+
+  // ── Footer ──
+  writeCenter('Thank you for dining with us!', 8);
+  writeCenter('Please visit again', 8);
+
+  const filename = `GoldenWok-${data.orderId.slice(-6).toUpperCase()}.pdf`;
+  doc.save(filename);
 }
 
 export async function printReceiptBluetooth(data: ReceiptData): Promise<void> {
