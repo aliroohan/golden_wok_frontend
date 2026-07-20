@@ -348,6 +348,7 @@ function printViaIframe(html: string): void {
       if (document.getElementById('receipt-print-frame')) iframe.remove();
     }, 60000);
   };
+}
 
 export async function printReceiptBluetooth(data: ReceiptData): Promise<void> {
   await printReceipt(data, false);
